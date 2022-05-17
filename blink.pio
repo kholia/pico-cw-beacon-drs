@@ -1,0 +1,73 @@
+;
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
+;
+; SPDX-License-Identifier: BSD-3-Clause
+;
+
+; SET pin 0 should be mapped to your LED GPIO
+
+.program blink
+.wrap_target
+    set pins, 1;
+    set pins, 0;
+.wrap
+
+
+% c-sdk {
+// this is a raw helper function for use by the user which sets up the GPIO output, and configures the SM to output on a particular pin
+
+void blink_program_init(PIO pio, uint sm, uint offset, uint pin, uint8_t *code) {
+   pio_gpio_init(pio, pin);
+   pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+   pio_sm_config c = blink_program_get_default_config(offset);
+   sm_config_set_set_pins(&c, pin, 1);
+
+   // https://www.codebug.org.uk/learn/step/541/morse-code-timing-rules/
+   int dit_delay = 92; // 13 WPM
+
+   int index;
+
+begin:
+
+   pio_sm_set_enabled(pio, sm, false);
+
+   for (index = 0; code[index] != 0; index++)
+   {
+      // float div = (float)clock_get_hz(clk_sys) / (21000010 * 2); // 15m band
+      float div = (float)clock_get_hz(clk_sys) / (144000010 * 2); // VHF band
+      sm_config_set_clkdiv(&c, div);
+      pio_sm_init(pio, sm, offset, &c);
+      if (code[index] == '.') {
+        pio_sm_set_enabled(pio, sm, true);
+        sleep_ms(dit_delay);
+        pio_sm_set_enabled(pio, sm, false);
+      }
+      else if (code[index] == '-') {
+        pio_sm_set_enabled(pio, sm, true);
+        sleep_ms(dit_delay * 3);
+        pio_sm_set_enabled(pio, sm, false);
+      }
+      else if (code[index] == ' ') {
+        pio_sm_set_enabled(pio, sm, false);
+        sleep_ms(dit_delay * 2);  // We have slept for `dit_delay` previously (3 - 1 == 2)
+      }
+      else if (code[index] == '/') {
+        pio_sm_set_enabled(pio, sm, false);
+        sleep_ms(dit_delay * 6);  // We have slept for `dit_delay` previously (7 - 1 == 6)
+      }
+      else {
+        printf("XXX");
+      }
+
+      // Hack ;)
+      sleep_ms(dit_delay);
+   }
+
+   sleep_ms(5000);
+   goto begin;
+
+   printf("Stopping the beacon...\n");
+   pio_sm_set_enabled(pio, sm, false);
+   pio_clear_instruction_memory(pio);
+}
+%}
