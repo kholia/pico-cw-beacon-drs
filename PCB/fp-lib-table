@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name "QRPLABS LPF")(type "KiCad")(uri "${KIPRJMOD}/QRPLABS LPF")(options "")(descr ""))
+  (lib (name "QRP_LPF")(type "KiCad")(uri "${KIPRJMOD}/QRPLABS LPF/QRP_LPF.pretty")(options "")(descr ""))
+  (lib (name "footprints")(type "KiCad")(uri "${KIPRJMOD}/footprints")(options "")(descr ""))
+)

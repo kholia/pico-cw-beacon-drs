@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "SN74ACT244")(type "KiCad")(uri "${KIPRJMOD}/SN74ACT244.kicad_sym")(options "")(descr ""))
+)

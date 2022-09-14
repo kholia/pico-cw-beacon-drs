@@ -1,0 +1,3 @@
+dummy:
+	# cmake -DPICO_BOARD=pico_w -DWIFI_SSID="ssid" -DWIFI_PASSWORD="password" .
+	cmake -DPICO_BOARD=pico_w -DWIRELESS=true .

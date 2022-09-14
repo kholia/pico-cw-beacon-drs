@@ -16,58 +16,143 @@
 % c-sdk {
 // this is a raw helper function for use by the user which sets up the GPIO output, and configures the SM to output on a particular pin
 
-void blink_program_init(PIO pio, uint sm, uint offset, uint pin, uint8_t *code) {
-   pio_gpio_init(pio, pin);
-   pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
-   pio_sm_config c = blink_program_get_default_config(offset);
-   sm_config_set_set_pins(&c, pin, 1);
+const uint LED_PIN = 25;
+const uint BUZZER_PIN = 4;
 
-   // https://www.codebug.org.uk/learn/step/541/morse-code-timing-rules/
-   int dit_delay = 92; // 13 WPM
+// https://www.codebug.org.uk/learn/step/541/morse-code-timing-rules/
+const uint DOT_PERIOD_MS = 92; // 13 WPM
 
-   int index;
+const char *morse_letters[] = {
+    ".-",    // A
+    "-...",  // B
+    "-.-.",  // C
+    "-..",   // D
+    ".",     // E
+    "..-.",  // F
+    "--.",   // G
+    "....",  // H
+    "..",    // I
+    ".---",  // J
+    "-.-",   // K
+    ".-..",  // L
+    "--",    // M
+    "-.",    // N
+    "---",   // O
+    ".--.",  // P
+    "--.-",  // Q
+    ".-.",   // R
+    "...",   // S
+    "-",     // T
+    "..-",   // U
+    "...-",  // V
+    ".--",   // W
+    "-..-",  // X
+    "-.--",  // Y
+    "--.."   // Z
+};
+
+const char *morse_numbers[] = {
+  "-----", // 0
+  ".----", // 1
+  "..---", // 2
+  "...--", // 3
+  "....-", // 4
+  ".....", // 5
+  "-....", // 6
+  "--...", // 7
+  "---..", // 8
+  "----."  // 9
+};
+
+int main_on();
+int main_off();
+
+void on(PIO pio, uint sm, uint pin) {
+    pio_gpio_init(pio, pin);
+    pio_sm_set_enabled(pio, sm, true);
+    main_on();
+    gpio_put(BUZZER_PIN, 1);
+}
+
+void off(PIO pio, uint sm, uint pin) {
+    pio_sm_set_enabled(pio, sm, false);
+    gpio_init(pin);
+    gpio_set_dir(pin, GPIO_OUT);
+    gpio_put(pin, 0);
+    main_off();
+    gpio_put(BUZZER_PIN, 0);
+}
+
+void put_morse_letter(PIO pio, uint sm, uint pin, const char *pattern) {
+    puts(pattern);
+    for (; *pattern; ++pattern) {
+        on(pio, sm, pin);
+        if (*pattern == '.')
+            sleep_ms(DOT_PERIOD_MS);
+        else
+            sleep_ms(DOT_PERIOD_MS * 3);
+        off(pio, sm, pin);
+        sleep_ms(DOT_PERIOD_MS * 1);
+    }
+    sleep_ms(DOT_PERIOD_MS * 2);
+}
+
+void put_morse_str(PIO pio, uint sm, uint pin, const char *str) {
+    for (; *str; ++str) {
+        printf("%c\n", *str);
+        if (*str >= 'A' && *str <= 'Z') {
+            put_morse_letter(pio, sm, pin, morse_letters[*str - 'A']);
+        } else if (*str >= 'a' && *str <= 'z') {
+            put_morse_letter(pio, sm, pin, morse_letters[*str - 'a']);
+        } else if (*str >= '0' && *str <= '9') {
+            put_morse_letter(pio, sm, pin, morse_numbers[*str - '0']);
+        } else if (*str == '?') {
+            put_morse_letter(pio, sm, pin, "..--.."); // k1te ? Question mark
+        } else if (*str == '/') {
+            put_morse_letter(pio, sm, pin, "-..-."); // k1te ~ for /B
+        } else if (*str == '~') {
+            put_morse_letter(pio, sm, pin, "..--"); // k1te ~ THE 'pi' SYMBOL (new 10/01/2022)
+        } else if (*str == ' ') {
+            sleep_ms(DOT_PERIOD_MS * 4);
+        }
+    }
+}
+
+void blink_program_init(PIO pio, uint sm, uint offset, uint pin, unsigned char *message) {
+    pio_sm_config c = blink_program_get_default_config(offset);
+    pio_gpio_init(pio, pin);
+    sm_config_set_set_pins(&c, pin, 1);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    // Extra outputs
+    gpio_init(LED_PIN);
+    gpio_set_dir(LED_PIN, GPIO_OUT);
+    gpio_init(BUZZER_PIN);
+    gpio_set_dir(BUZZER_PIN, GPIO_OUT);
 
 begin:
+    off(pio, sm, pin);
 
-   pio_sm_set_enabled(pio, sm, false);
+    // CHANGE the 'frequency' as per your requirements
+    // unsigned long frequency = 10110000; // 30m band - https://en.wikipedia.org/wiki/WARC_bands#30-meter_band_plan
+    unsigned long frequency = 28192900; // 10m band - within 'beacon passband'
 
-   for (index = 0; code[index] != 0; index++)
-   {
-      // float div = (float)clock_get_hz(clk_sys) / (21000010 * 2); // 15m band
-      float div = (float)clock_get_hz(clk_sys) / (144000010 * 2); // VHF band
-      sm_config_set_clkdiv(&c, div);
-      pio_sm_init(pio, sm, offset, &c);
-      if (code[index] == '.') {
-        pio_sm_set_enabled(pio, sm, true);
-        sleep_ms(dit_delay);
-        pio_sm_set_enabled(pio, sm, false);
-      }
-      else if (code[index] == '-') {
-        pio_sm_set_enabled(pio, sm, true);
-        sleep_ms(dit_delay * 3);
-        pio_sm_set_enabled(pio, sm, false);
-      }
-      else if (code[index] == ' ') {
-        pio_sm_set_enabled(pio, sm, false);
-        sleep_ms(dit_delay * 2);  // We have slept for `dit_delay` previously (3 - 1 == 2)
-      }
-      else if (code[index] == '/') {
-        pio_sm_set_enabled(pio, sm, false);
-        sleep_ms(dit_delay * 6);  // We have slept for `dit_delay` previously (7 - 1 == 6)
-      }
-      else {
-        printf("XXX");
-      }
+    float div = (float)clock_get_hz(clk_sys) / (frequency * 2);
+    sm_config_set_clkdiv(&c, div);
+    pio_gpio_init(pio, pin);
+    pio_sm_init(pio, sm, offset, &c);
+    off(pio, sm, pin);
 
-      // Hack ;)
-      sleep_ms(dit_delay);
-   }
+    put_morse_str(pio, sm, pin, message);
 
-   sleep_ms(5000);
-   goto begin;
+    off(pio, sm, pin);
+    sleep_ms(5000);
 
-   printf("Stopping the beacon...\n");
-   pio_sm_set_enabled(pio, sm, false);
-   pio_clear_instruction_memory(pio);
+    goto begin; // loop!
+
+    // Never reached!
+    printf("Stopping the beacon...\n");
+    off(pio, sm, pin);
+    pio_clear_instruction_memory(pio);
 }
 %}
