@@ -135,7 +135,8 @@ begin:
 
     // CHANGE the 'frequency' as per your requirements
     // unsigned long frequency = 10110000; // 30m band - https://en.wikipedia.org/wiki/WARC_bands#30-meter_band_plan
-    unsigned long frequency = 28192900; // 10m band - within 'beacon passband'
+    // unsigned long frequency = 28192900; // 10m band - within 'beacon passband'
+    unsigned long frequency = 14035000; // 20m band
 
     float div = (float)clock_get_hz(clk_sys) / (frequency * 2);
     sm_config_set_clkdiv(&c, div);

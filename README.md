@@ -93,8 +93,11 @@ beacon.
 
 ![PCB Render](./Screenshot_2022-10-10_15-08-42.png)
 
-Note: We may need to buffer GP2 with a 74ACT04 Hex Inverter IC before feeding
-it to the 74ACT244 Octal Driver IC. Let's see how it goes...
+
+[UPDATE] The first version of the PCB was successfully validated on
+26th-October-2022.
+
+Output is > 3.25W (~36.2Vpp) @ 14 MHz @ 13v with the ADX LPF filter.
 
 
 #### Automatic CW Decoding
@@ -133,7 +136,11 @@ On Android, you can use the `Morse Expert` app for automatic CW decoding.
 
 - Gajendra Kumar - VU2BGS
 
+- Barb - WB2CBA
+
 
 #### References
 
 - https://github.com/raspberrypi/pico-examples/blob/master/picoboard/blinky/blinky.c
+- https://antrak.org.tr/blog/adx-arduino-digital-transceiver/
+- https://github.com/WB2CBA/ADX
