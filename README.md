@@ -3,6 +3,8 @@
 This project generates a RF signal by toggling a GPIO pin (of a Raspberry Pi
 Pico / Pico W board) at a high speed (HF frequency).
 
+Note: The default GPIO pin is `GP2`.
+
 
 #### Build Steps
 
@@ -91,13 +93,16 @@ beacon.
 
 #### PCB Render
 
-![PCB Render](./Screenshot_2022-10-10_15-08-42.png)
+![PCB Schematic](./Screenshot_2022-10-27_21-20-21.png)
+![PCB Render](./Screenshot_2022-10-27_12-33-59.png)
 
 
 [UPDATE] The first version of the PCB was successfully validated on
 26th-October-2022.
 
 Output is > 3.25W (~36.2Vpp) @ 14 MHz @ 13v with the ADX LPF filter.
+
+Use `27 SWG winding wire` in the ADX LPF filter.
 
 
 #### Automatic CW Decoding
